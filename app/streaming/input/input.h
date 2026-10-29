@@ -5,6 +5,8 @@
 
 #include "SDL_compat.h"
 
+#include <SDL_hidapi.h>
+
 struct GamepadState {
     SDL_GameController* controller;
     SDL_JoystickID jsId;
@@ -128,6 +130,8 @@ public:
 
     void setAdaptiveTriggers(uint16_t controllerNumber, DualSenseOutputReport *report);
 
+    void setDualSenseHaptics(uint16_t controllerNumber, uint8_t *report);
+
     void handleTouchFingerEvent(SDL_TouchFingerEvent* event);
 
     int getAttachedGamepadMask();
@@ -222,6 +226,10 @@ private:
 
     int m_GamepadMask;
     GamepadState m_GamepadState[MAX_GAMEPADS];
+
+    // Raw HID handle used to write the Bluetooth report 0x36 (state + 3 kHz HD haptics).
+    SDL_hid_device* m_DualSenseHapticsDevice = nullptr;
+    bool m_DualSenseHapticsDisabled = false;
     QSet<short> m_KeysDown;
     bool m_FakeCaptureActive;
     QString m_OldIgnoreDevices;

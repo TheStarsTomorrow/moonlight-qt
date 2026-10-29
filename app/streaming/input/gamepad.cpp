@@ -916,6 +916,69 @@ void SdlInputHandler::setAdaptiveTriggers(uint16_t controllerNumber, DualSenseOu
     SDL_free(report);
 }
 
+static SDL_hid_device *openDualSenseHapticsDevice(SDL_GameController *controller)
+{
+    SDL_hid_device_info *devices = SDL_hid_enumerate(0x054C, 0x0CE6);
+    if (devices == nullptr) {
+        devices = SDL_hid_enumerate(0x054C, 0x0DF2);
+    }
+    if (devices == nullptr) {
+        return nullptr;
+    }
+
+    const char *serial = SDL_JoystickGetSerial(SDL_GameControllerGetJoystick(controller));
+    SDL_hid_device *result = nullptr;
+    for (SDL_hid_device_info *info = devices; info != nullptr; info = info->next) {
+        if (info->vendor_id != 0x054C || (info->product_id != 0x0CE6 && info->product_id != 0x0DF2)) {
+            continue;
+        }
+        if (serial != nullptr && info->serial_number != nullptr &&
+            SDL_strcasecmp(serial, info->serial_number) != 0) {
+            continue;
+        }
+        result = SDL_hid_open_path(info->path, 0);
+        if (result != nullptr) {
+            break;
+        }
+    }
+
+    SDL_hid_free_enumeration(devices);
+    return result;
+}
+
+void SdlInputHandler::setDualSenseHaptics(uint16_t controllerNumber, uint8_t *report)
+{
+#if SDL_VERSION_ATLEAST(2, 0, 16)
+    // Make sure the controller number is within our supported count
+    if (controllerNumber < MAX_GAMEPADS &&
+        // and we have a valid controller
+        m_GamepadState[controllerNumber].controller != nullptr &&
+        // and it's a PS5 controller
+        SDL_GameControllerGetType(m_GamepadState[controllerNumber].controller) == SDL_CONTROLLER_TYPE_PS5) {
+        if (m_DualSenseHapticsDevice == nullptr && !m_DualSenseHapticsDisabled) {
+            m_DualSenseHapticsDevice = openDualSenseHapticsDevice(m_GamepadState[controllerNumber].controller);
+            if (m_DualSenseHapticsDevice == nullptr) {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unable to open DualSense for HD haptics");
+                m_DualSenseHapticsDisabled = true;
+            }
+        }
+
+        // The host already built the complete Bluetooth report 0x36 (state +
+        // 3 kHz haptics + CRC); write it verbatim. SDL_GameControllerSendEffect
+        // cannot carry it because SDL wraps/caps effect payloads at 78 bytes.
+        if (m_DualSenseHapticsDevice != nullptr &&
+            SDL_hid_write(m_DualSenseHapticsDevice, report, SS_DS_HAPTICS_REPORT_SIZE) < 0) {
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "DualSense HD haptics write failed: %s", SDL_GetError());
+            SDL_hid_close(m_DualSenseHapticsDevice);
+            m_DualSenseHapticsDevice = nullptr;
+            m_DualSenseHapticsDisabled = true;
+        }
+    }
+#endif
+
+    SDL_free(report);
+}
+
 QString SdlInputHandler::getUnmappedGamepads()
 {
     QString ret;

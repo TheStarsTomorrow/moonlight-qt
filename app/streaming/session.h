@@ -232,6 +232,9 @@ private:
     void clSetAdaptiveTriggers(uint16_t controllerNumber, uint8_t eventFlags, uint8_t typeLeft, uint8_t typeRight, uint8_t *left, uint8_t *right);
 
     static
+    void clSetDualSenseHaptics(uint16_t controllerNumber, uint8_t *report);
+
+    static
     int arInit(int audioConfiguration,
                const POPUS_MULTISTREAM_CONFIGURATION opusConfig,
                void* arContext, int arFlags);

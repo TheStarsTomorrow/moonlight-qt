@@ -208,6 +208,11 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
 
 SdlInputHandler::~SdlInputHandler()
 {
+    if (m_DualSenseHapticsDevice != nullptr) {
+        SDL_hid_close(m_DualSenseHapticsDevice);
+        m_DualSenseHapticsDevice = nullptr;
+    }
+
     for (int i = 0; i < MAX_GAMEPADS; i++) {
         if (m_GamepadState[i].mouseEmulationTimer != 0) {
             Session::get()->notifyMouseEmulationMode(false);
