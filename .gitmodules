@@ -1,7 +1,7 @@
 [submodule "moonlight-common-c/moonlight-common-c"]
 	path = moonlight-common-c/moonlight-common-c
-	url = https://github.com/JimothySnicket/moonlight-common-c.git
-	branch = moonlight-mic-qt-nested
+	url = https://github.com/TheStarsTomorrow/moonlight-common-c.git
+	branch = hd-haptics-qt
 [submodule "qmdnsengine/qmdnsengine"]
 	path = qmdnsengine/qmdnsengine
 	url = https://github.com/cgutman/qmdnsengine.git
