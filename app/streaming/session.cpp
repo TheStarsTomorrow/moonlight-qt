@@ -29,6 +29,7 @@
 #define SDL_CODE_GAMECONTROLLER_SET_CONTROLLER_LED 104
 #define SDL_CODE_GAMECONTROLLER_SET_ADAPTIVE_TRIGGERS 105
 #define SDL_CODE_GAMECONTROLLER_SET_DS_HAPTICS 106
+#define SDL_CODE_GAMECONTROLLER_SET_DS_REAR_HAPTICS 107
 
 #include <openssl/rand.h>
 
@@ -62,7 +63,8 @@ CONNECTION_LISTENER_CALLBACKS Session::k_ConnCallbacks = {
     Session::clSetMotionEventState,
     Session::clSetControllerLED,
     Session::clSetAdaptiveTriggers,
-    Session::clSetDualSenseHaptics
+    Session::clSetDualSenseHaptics,
+    Session::clSetDualSenseRearHaptics
 };
 
 Session* Session::s_ActiveSession;
@@ -284,6 +286,19 @@ void Session::clSetDualSenseHaptics(uint16_t controllerNumber, uint8_t *report){
 
     uint8_t *state = (uint8_t *) SDL_malloc(SS_DS_HAPTICS_REPORT_SIZE);
     SDL_memcpy(state, report, SS_DS_HAPTICS_REPORT_SIZE);
+
+    hapticsEvent.user.data2 = (void *) state;
+    SDL_PushEvent(&hapticsEvent);
+}
+
+void Session::clSetDualSenseRearHaptics(uint16_t controllerNumber, uint8_t *pcm){
+    SDL_Event hapticsEvent = {};
+    hapticsEvent.type = SDL_USEREVENT;
+    hapticsEvent.user.code = SDL_CODE_GAMECONTROLLER_SET_DS_REAR_HAPTICS;
+    hapticsEvent.user.data1 = (void*)(uintptr_t)controllerNumber;
+
+    uint8_t *state = (uint8_t *) SDL_malloc(SS_DS_REAR_HAPTICS_SIZE);
+    SDL_memcpy(state, pcm, SS_DS_REAR_HAPTICS_SIZE);
 
     hapticsEvent.user.data2 = (void *) state;
     SDL_PushEvent(&hapticsEvent);
@@ -2055,6 +2070,10 @@ void Session::exec()
             case SDL_CODE_GAMECONTROLLER_SET_DS_HAPTICS:
                 m_InputHandler->setDualSenseHaptics((uint16_t)(uintptr_t)event.user.data1,
                                                     (uint8_t *)event.user.data2);
+                break;
+            case SDL_CODE_GAMECONTROLLER_SET_DS_REAR_HAPTICS:
+                m_InputHandler->setDualSenseRearHaptics((uint16_t)(uintptr_t)event.user.data1,
+                                                        (uint8_t *)event.user.data2);
                 break;
             default:
                 SDL_assert(false);

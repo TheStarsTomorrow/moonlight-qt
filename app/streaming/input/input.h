@@ -132,6 +132,8 @@ public:
 
     void setDualSenseHaptics(uint16_t controllerNumber, uint8_t *report);
 
+    void setDualSenseRearHaptics(uint16_t controllerNumber, uint8_t *pcm);
+
     void handleTouchFingerEvent(SDL_TouchFingerEvent* event);
 
     int getAttachedGamepadMask();
@@ -230,6 +232,10 @@ private:
     // Raw HID handle used to write the Bluetooth report 0x36 (state + 3 kHz HD haptics).
     SDL_hid_device* m_DualSenseHapticsDevice = nullptr;
     bool m_DualSenseHapticsDisabled = false;
+
+    // USB audio output used for wired HD haptics (rear channels).
+    SDL_AudioDeviceID m_DualSenseHapticsAudio = 0;
+    bool m_DualSenseHapticsAudioDisabled = false;
     QSet<short> m_KeysDown;
     bool m_FakeCaptureActive;
     QString m_OldIgnoreDevices;

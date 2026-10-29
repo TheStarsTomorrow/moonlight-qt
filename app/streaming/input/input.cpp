@@ -212,6 +212,10 @@ SdlInputHandler::~SdlInputHandler()
         SDL_hid_close(m_DualSenseHapticsDevice);
         m_DualSenseHapticsDevice = nullptr;
     }
+    if (m_DualSenseHapticsAudio != 0) {
+        SDL_CloseAudioDevice(m_DualSenseHapticsAudio);
+        m_DualSenseHapticsAudio = 0;
+    }
 
     for (int i = 0; i < MAX_GAMEPADS; i++) {
         if (m_GamepadState[i].mouseEmulationTimer != 0) {

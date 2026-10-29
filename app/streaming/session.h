@@ -235,6 +235,9 @@ private:
     void clSetDualSenseHaptics(uint16_t controllerNumber, uint8_t *report);
 
     static
+    void clSetDualSenseRearHaptics(uint16_t controllerNumber, uint8_t *pcm);
+
+    static
     int arInit(int audioConfiguration,
                const POPUS_MULTISTREAM_CONFIGURATION opusConfig,
                void* arContext, int arFlags);

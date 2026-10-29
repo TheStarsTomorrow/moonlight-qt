@@ -979,6 +979,69 @@ void SdlInputHandler::setDualSenseHaptics(uint16_t controllerNumber, uint8_t *re
     SDL_free(report);
 }
 
+static SDL_AudioDeviceID openDualSenseHapticsAudio()
+{
+    const int count = SDL_GetNumAudioDevices(0);
+    for (int i = 0; i < count; ++i) {
+        const char *name = SDL_GetAudioDeviceName(i, 0);
+        if (name == nullptr) {
+            continue;
+        }
+        if (SDL_strcasestr(name, "DualSense") == nullptr &&
+            SDL_strcasestr(name, "Wireless Controller") == nullptr) {
+            continue;
+        }
+
+        SDL_AudioSpec want = {};
+        want.freq = 48000;
+        want.format = AUDIO_S16LSB;
+        want.channels = 4;
+        want.samples = 480;
+
+        SDL_AudioDeviceID id = SDL_OpenAudioDevice(name, 0, &want, nullptr, 0);
+        if (id != 0) {
+            SDL_PauseAudioDevice(id, 0);
+            return id;
+        }
+    }
+    return 0;
+}
+
+void SdlInputHandler::setDualSenseRearHaptics(uint16_t controllerNumber, uint8_t *pcm)
+{
+#if SDL_VERSION_ATLEAST(2, 0, 16)
+    if (controllerNumber < MAX_GAMEPADS &&
+        m_GamepadState[controllerNumber].controller != nullptr &&
+        SDL_GameControllerGetType(m_GamepadState[controllerNumber].controller) == SDL_CONTROLLER_TYPE_PS5) {
+        if (m_DualSenseHapticsAudio == 0 && !m_DualSenseHapticsAudioDisabled) {
+            m_DualSenseHapticsAudio = openDualSenseHapticsAudio();
+            if (m_DualSenseHapticsAudio == 0) {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unable to open DualSense USB haptics audio");
+                m_DualSenseHapticsAudioDisabled = true;
+            }
+        }
+
+        if (m_DualSenseHapticsAudio != 0) {
+            // 480 rear stereo s16 frames (10 ms) expanded to 4ch with silent
+            // front channels; bound the queue to ~40 ms to avoid latency.
+            constexpr int frames = 480;
+            if (SDL_GetQueuedAudioSize(m_DualSenseHapticsAudio) <
+                frames * 4 * static_cast<int>(sizeof(Sint16)) * 4) {
+                Sint16 interleaved[frames * 4] = {};
+                const Sint16 *rear = reinterpret_cast<const Sint16 *>(pcm);
+                for (int i = 0; i < frames; ++i) {
+                    interleaved[i * 4 + 2] = rear[i * 2];
+                    interleaved[i * 4 + 3] = rear[i * 2 + 1];
+                }
+                SDL_QueueAudio(m_DualSenseHapticsAudio, interleaved, sizeof(interleaved));
+            }
+        }
+    }
+#endif
+
+    SDL_free(pcm);
+}
+
 QString SdlInputHandler::getUnmappedGamepads()
 {
     QString ret;
