@@ -5,6 +5,8 @@
 
 #include "SDL_compat.h"
 
+#include <SDL_hidapi.h>
+
 struct GamepadState {
     SDL_GameController* controller;
     SDL_JoystickID jsId;
@@ -128,6 +130,14 @@ public:
 
     void setAdaptiveTriggers(uint16_t controllerNumber, DualSenseOutputReport *report);
 
+    void setDualSenseHaptics(uint16_t controllerNumber, uint8_t *report);
+
+    void setDualSenseRearHaptics(uint16_t controllerNumber, uint8_t *pcm);
+
+    void stopDualSenseHapticsWriter();
+
+    static int SDLCALL dualSenseHapticsWriterThread(void* param);
+
     void handleTouchFingerEvent(SDL_TouchFingerEvent* event);
 
     int getAttachedGamepadMask();
@@ -221,6 +231,16 @@ private:
     QSet<uint32_t> m_KeysDown;
     bool m_FakeMouseCaptureActive;
     bool m_KeyboardCaptureActive;
+
+    // Raw HID handle and worker thread used to stream Bluetooth 0x32 HD haptics.
+    struct DualSenseHapticsWriter;
+    DualSenseHapticsWriter* m_DualSenseHapticsWriter = nullptr;
+    SDL_hid_device* m_DualSenseHapticsDevice = nullptr;
+    bool m_DualSenseHapticsDisabled = false;
+    Uint32 m_DualSenseHapticsLastPacket = 0;
+    bool m_DualSenseHapticsUsbAudio = false;
+    SDL_AudioDeviceID m_DualSenseHapticsAudio = 0;
+    bool m_DualSenseHapticsAudioDisabled = false;
     QString m_OldIgnoreDevices;
     QString m_OldIgnoreDevicesExcept;
     QStringList m_IgnoreDeviceGuids;
